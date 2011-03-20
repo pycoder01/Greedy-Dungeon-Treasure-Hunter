@@ -185,7 +185,7 @@ class Game(object):
                 mx += 1
         self.dungeon = dungeon2
         if self.player_id == None:
-            raise Exception('Player not found. (Put one "@" on the map somewhere.)')
+            raise Exception('Player not found. (Put exactly one "@" on the map somewhere.)')
 
     # __del__
     def __del__(self):
@@ -225,7 +225,7 @@ class Game(object):
             self.screen.clear()
 
     def movable(self,nx,ny):
-        """Decide if a location is movable.
+        """Decide if a location is movable-to.
         
         Location must be on the map, not a wall, not occupied by an entity.
         """
@@ -238,7 +238,10 @@ class Game(object):
         return True
 
     def attackable(self,nx,ny):
-        """Decide if a location is attackable."""
+        """Decide if a location is attackable.
+        
+        Location must be on the map, not a wall, occupied by a Character.
+        """
         if nx < 0 or nx >= len(self.dungeon[0]): return False;
         if ny < 0 or ny >= len(self.dungeon): return False;
         if self.dungeon[ny][nx] != '.':
@@ -251,6 +254,7 @@ class Game(object):
         return True
 
     def path_movable(self,path):
+        """Decide if a whole path is movable-to each step along the way."""
         for point in path:
             if not self.movable(*point): return False;
         return True
