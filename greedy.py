@@ -2,7 +2,7 @@
 # greedy.py
 # Copyright (C) 2011 by Shawn Yarbrough
 # May be used for non-commerical purposes. May NOT be modified.
-# Better software license TBD!
+# TODO: Pick a better software license!
 #
 # A simple dungeon game with a text map.
 
@@ -38,6 +38,9 @@ class Entity(object):
         self.inventory = []
         self.container = None
 
+    def name(self):
+        return utility.readable_name(self.__class__.__name__)
+
 # Item
 class Item(Entity):
     # __init__
@@ -70,8 +73,16 @@ class Character(Entity):
 
     # attack
     def attack(self,ee,game):
-        ee.hit_points -= self.stat_str
-        if ee.hit_points <= 0: ee.dead = True
+        dmg = self.stat_str
+        ee.hit_points -= dmg
+        txt = (self.name()+' attacked '+ee.name()+' for '+str(dmg)+
+              ' damage')
+        if ee.hit_points <= 0:
+            ee.dead = True
+            txt += ', a killing blow!'
+        else:
+            txt += '.'
+        game.console.append(txt)
         return ee.dead
 
     # pickup
@@ -132,6 +143,7 @@ class Game(object):
         # Game variables.
         self.dungeon=[]
         self.entities=[]
+        self.console = utility.Console()
         self.player_id = None
         self.quit = False
 #       self.clock = float(0)
@@ -360,17 +372,15 @@ class Game(object):
             self.screen.addstr(yy,xx,ee.code,curses.color_pair(1))
 
         # Console.
-        contxt1 = 'x '+str(xmin)+' to '+str(xmax)+', y '+str(ymin)+' to '+str(ymax)
-        contxt2 = 'view '+str(self.view_xsize)+"x"+str(self.view_ysize)+", half "+str((self.view_xsize-1)/2)+"x"+str((self.view_ysize-1)/2)
-        contxt3 = 'player '+str(player.xx)+'x'+str(player.yy)+'   ymin '+str(ymin)+' vy0 '+str(vy0)
-        contxt4 = ''
-        contxt5 = ''
+#       contxt1 = 'x '+str(xmin)+' to '+str(xmax)+', y '+str(ymin)+' to '+str(ymax)
+#       contxt2 = 'view '+str(self.view_xsize)+"x"+str(self.view_ysize)+", half "+str((self.view_xsize-1)/2)+"x"+str((self.view_ysize-1)/2)
+#       contxt3 = 'player '+str(player.xx)+'x'+str(player.yy)+'   ymin '+str(ymin)+' vy0 '+str(vy0)
+#       contxt4 = ''
+#       contxt5 = ''
 
-        self.screen.addstr(self.screen_ysize-self.console_ysize  ,0,contxt1)
-        self.screen.addstr(self.screen_ysize-self.console_ysize+1,0,contxt2)
-        self.screen.addstr(self.screen_ysize-self.console_ysize+2,0,contxt3)
-        self.screen.addstr(self.screen_ysize-self.console_ysize+3,0,contxt4)
-        self.screen.addstr(self.screen_ysize-self.console_ysize+4,0,contxt5)
+        contxt = self.console.show(5,self.console_xsize)
+        for ii in range(0,5):
+            self.screen.addstr(self.screen_ysize-self.console_ysize+ii,0,contxt[ii])
 
         # Cursor.
         self.screen.move((self.view_ysize-1)/2,(self.view_xsize-1)/2)
