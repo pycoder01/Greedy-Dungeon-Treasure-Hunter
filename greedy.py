@@ -343,13 +343,13 @@ class Game(object):
             lin = self.dungeon[yy][xmin:xmax+1]
             self.screen.addstr((yy-ymin)+(ymin-vy0),(0)+(xmin-vx0),lin,curses.color_pair(1))
 
-        # Draw AI paths.
-        for ee in self.entities:
-            if not isinstance(ee,Monster): continue;
-            for point in ee.travel:
-                xx = point[0]-vx0
-                yy = point[1]-vy0
-                self.screen.addstr(yy,xx,'?',curses.color_pair(1))
+#       # Draw AI paths.
+#       for ee in self.entities:
+#           if not isinstance(ee,Monster): continue;
+#           for point in ee.travel:
+#               xx = point[0]-vx0
+#               yy = point[1]-vy0
+#               self.screen.addstr(yy,xx,'?',curses.color_pair(1))
 
         # Draw map entities.
         for ee in self.entities:
