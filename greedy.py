@@ -73,6 +73,7 @@ class Character(Entity):
 
     # attack
     def attack(self,ee,game):
+        if self.dead: return;
         dmg = self.stat_str
         ee.hit_points -= dmg
         txt = (self.name()+' attacked '+ee.name()+' for '+str(dmg)+
@@ -83,6 +84,8 @@ class Character(Entity):
         else:
             txt += '.'
         game.console.append(txt)
+        if ee.dead and ee is game.player:
+            game.console.append('You have died.')
         return ee.dead
 
     # pickup
@@ -143,10 +146,13 @@ class Game(object):
         # Game variables.
         self.dungeon=[]
         self.entities=[]
-        self.console = utility.Console()
         self.player = None
         self.quit = False
-#       self.clock = float(0)
+        self.console = utility.Console()
+        self.console.append('Welcome to Greedy Dungeon Treasure Hunter (TM)!')
+        self.console.append('Copyright (C) 2011 by Shawn Yarbrough')
+        self.console.append('(Press Q at any time to quit the game.)')
+        self.console.append('')
 
         # Start up CURSES.
         self.screen = curses.initscr()
@@ -158,6 +164,7 @@ class Game(object):
         self.screen.leaveok(0)
         self.screen.keypad(1)
         self.screen.clear()
+        self.screen.refresh()
 
         # Layout dimensions for the CURSES screen.
         self.map_ysize, self.map_xsize = (0,0)
@@ -221,7 +228,7 @@ class Game(object):
     # run_keyboard
     def run_keyboard(self):
         ch = self.screen.getch()
-        if ch == ord('q'):    # Quit game.
+        if ch == ord('q') or ch == ord('Q'):    # Quit game.
             self.quit = True
         elif ch == 27:    # Quit game.
             self.quit = True
@@ -336,10 +343,10 @@ class Game(object):
 
         # Map.
         xmin = self.player.xx-int(self.view_xsize/2)
-        xmax = xmin+self.view_xsize
+        xmax = xmin+self.view_xsize-1
 
         ymin = self.player.yy-int(self.view_ysize/2)
-        ymax = ymin+self.view_ysize
+        ymax = ymin+self.view_ysize-1
 
         vx0,vy0 = xmin,ymin
 
@@ -349,10 +356,13 @@ class Game(object):
         if ymin < 0: ymin = 0;
         if ymax >= self.map_ysize: ymax = self.map_ysize-1;
 
+        for yy in range(0,self.view_ysize):
+            self.screen.addstr(yy,0,' '*self.view_xsize,curses.color_pair(1))
+
         # Draw map tiles.
         for yy in range(ymin,ymax+1):
             lin = self.dungeon[yy][xmin:xmax+1]
-            self.screen.addstr((yy-ymin)+(ymin-vy0),(0)+
+            self.screen.addstr((yy-ymin)+(ymin-vy0),
                                (xmin-vx0),lin,curses.color_pair(1))
 
 #       # Draw AI paths.

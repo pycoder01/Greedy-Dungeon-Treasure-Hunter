@@ -1,7 +1,7 @@
 Greedy Dungeon Treasure Hunter (TM)
 ===================================
 
-A simple text dungeon game. Look-and-feel is similar to [Nethack](http://www.nethack.org/), except that Greedy centers the map view on the player and scrolls around as the player moves. Written in Python for fun.
+A simple text dungeon game. The look-and-feel is similar to [Nethack](http://www.nethack.org/), except that Greedy centers the map view on the player and scrolls around as the player moves. Written in Python for fun.
 
 Developed and tested on Linux in an xterm window (actually GNOME Terminal on Ubuntu). Uses the CURSES text library.
 
