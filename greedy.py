@@ -144,7 +144,7 @@ class Game(object):
         self.dungeon=[]
         self.entities=[]
         self.console = utility.Console()
-        self.player_id = None
+        self.player = None
         self.quit = False
 #       self.clock = float(0)
 
@@ -171,7 +171,8 @@ class Game(object):
             self.dungeon.append(lin)
             if self.map_xsize != 0:
                 if len(lin) != self.map_xsize:
-                    raise Exception('Map must be rectangular. See line #'+str(len(dungeon))+' of "'+level_file_name+'".')
+                    raise Exception('Map must be rectangular. See line #'+
+                          str(len(dungeon))+' of "'+level_file_name+'".')
             else:
                 self.map_xsize = len(lin)
         self.map_ysize = len(self.dungeon)
@@ -184,8 +185,8 @@ class Game(object):
             mx = 0
             for ch in lin:
                 if ch == '@':
-                    self.player_id = len(self.entities)
-                    self.entities.append(Player(mx,my))
+                    self.player = Player(mx,my)
+                    self.entities.append(self.player)
                     ch = '.'
                 elif ch == 'i':
                     self.entities.append(Imp(mx,my))
@@ -196,8 +197,9 @@ class Game(object):
                 dungeon2[-1] += ch
                 mx += 1
         self.dungeon = dungeon2
-        if self.player_id == None:
-            raise Exception('Player not found. (Put exactly one "@" on the map somewhere.)')
+        if self.player == None:
+            raise Exception('Player not found. (Put exactly one'+
+                            ' "@" on the map somewhere.)')
 
     # __del__
     def __del__(self):
@@ -218,23 +220,24 @@ class Game(object):
 
     # run_keyboard
     def run_keyboard(self):
-        player = self.entities[self.player_id]
         ch = self.screen.getch()
         if ch == ord('q'):    # Quit game.
             self.quit = True
         elif ch == 27:    # Quit game.
             self.quit = True
-        elif ch == curses.KEY_LEFT:
-            player.move(-1,0,self)
-        elif ch == curses.KEY_RIGHT:
-            player.move(+1,0,self)
-        elif ch == curses.KEY_UP:
-            player.move(0,-1,self)
-        elif ch == curses.KEY_DOWN:
-            player.move(0,+1,self)
         elif ch == curses.KEY_RESIZE:
             self.size_window()
             self.screen.clear()
+
+        if not self.player.dead:
+            if ch == curses.KEY_LEFT:
+                self.player.move(-1,0,self)
+            elif ch == curses.KEY_RIGHT:
+                self.player.move(+1,0,self)
+            elif ch == curses.KEY_UP:
+                self.player.move(0,-1,self)
+            elif ch == curses.KEY_DOWN:
+                self.player.move(0,+1,self)
 
     def movable(self,nx,ny):
         """Decide if a location is movable-to.
@@ -273,14 +276,13 @@ class Game(object):
 
     def run_ai(self):
         """Run the artifical intelligence logic."""
-        player = self.entities[self.player_id]
         first = True
         for ee in self.entities:
             if not isinstance(ee,Monster): continue;
 
             # Check if the monster has line-of-sight to the player.
-            ppath = utility.line(ee.xx,ee.yy,player.xx,player.yy)
-            if len(ppath) >= 2:
+            ppath = utility.line(ee.xx,ee.yy,self.player.xx,self.player.yy)
+            if len(ppath) > 2:
                 del ppath[0]
                 del ppath[-1]
                 if self.path_movable(ppath):
@@ -288,7 +290,7 @@ class Game(object):
 
             # We are next to the player. Attack.
             else:
-                ee.attack(player,self)
+                ee.attack(self.player,self)
                 continue
 
             # Pick a random direction to travel if we have no path yet
@@ -326,20 +328,17 @@ class Game(object):
 
     # run_entity_clean_up
     def run_entity_clean_up(self):
-        player = self.entities[self.player_id]
         self.entities[:] = [ee for ee in self.entities if Game.keep_entity(ee)]
-        self.player_id = self.entities.index(player)
 
     # run_draw
     def run_draw(self):
         self.screen.erase()
-        player = self.entities[self.player_id]
 
         # Map.
-        xmin = player.xx-int(self.view_xsize/2)
+        xmin = self.player.xx-int(self.view_xsize/2)
         xmax = xmin+self.view_xsize
 
-        ymin = player.yy-int(self.view_ysize/2)
+        ymin = self.player.yy-int(self.view_ysize/2)
         ymax = ymin+self.view_ysize
 
         vx0,vy0 = xmin,ymin
@@ -353,7 +352,8 @@ class Game(object):
         # Draw map tiles.
         for yy in range(ymin,ymax+1):
             lin = self.dungeon[yy][xmin:xmax+1]
-            self.screen.addstr((yy-ymin)+(ymin-vy0),(0)+(xmin-vx0),lin,curses.color_pair(1))
+            self.screen.addstr((yy-ymin)+(ymin-vy0),(0)+
+                               (xmin-vx0),lin,curses.color_pair(1))
 
 #       # Draw AI paths.
 #       for ee in self.entities:
@@ -372,15 +372,10 @@ class Game(object):
             self.screen.addstr(yy,xx,ee.code,curses.color_pair(1))
 
         # Console.
-#       contxt1 = 'x '+str(xmin)+' to '+str(xmax)+', y '+str(ymin)+' to '+str(ymax)
-#       contxt2 = 'view '+str(self.view_xsize)+"x"+str(self.view_ysize)+", half "+str((self.view_xsize-1)/2)+"x"+str((self.view_ysize-1)/2)
-#       contxt3 = 'player '+str(player.xx)+'x'+str(player.yy)+'   ymin '+str(ymin)+' vy0 '+str(vy0)
-#       contxt4 = ''
-#       contxt5 = ''
-
         contxt = self.console.show(5,self.console_xsize)
         for ii in range(0,5):
-            self.screen.addstr(self.screen_ysize-self.console_ysize+ii,0,contxt[ii])
+            self.screen.addstr(self.screen_ysize-self.console_ysize+
+                               ii,0,contxt[ii])
 
         # Cursor.
         self.screen.move((self.view_ysize-1)/2,(self.view_xsize-1)/2)
@@ -388,21 +383,23 @@ class Game(object):
 
     # run
     def run(self):
-        if self.player_id == None: return
         self.run_draw()
         global got_signal
-        while not self.quit and not got_signal and not self.player_id == None:
-            self.run_keyboard()
-            self.run_ai()
-            self.run_entity_clean_up()
-            self.run_draw()
-            time.sleep(0.05)
+        while not self.quit and not got_signal:
+            if not self.player.dead:
+                self.run_keyboard()
+                self.run_ai()
+                self.run_entity_clean_up()
+                self.run_draw()
+            else:
+                self.run_keyboard()
+                self.run_draw()
 
 # main
 def main():
     if len(sys.argv) > 2:
         print "Usage: "+sys.argv[0]+" [game]"
-        print "    Where [game] is a directory name inside the ./dungeons/ folder."
+        print "    Where [game] is a folder name in the ./dungeons/ folder."
 
     # Locate the game.
     game_directory_name = 'greedy'

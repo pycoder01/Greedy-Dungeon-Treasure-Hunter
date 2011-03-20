@@ -9,7 +9,6 @@ TODO:
 
 * Test on Windows.
 * Test over a remote SSH connection. (May be slow due to the map scrolling.)
-* Report events such as attacks, damage, picking up items, etc.
 * Display the player's stats such as hit points and strength.
 * Display the player's inventory.
 * Add stairs to go to the next level.
