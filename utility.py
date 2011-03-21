@@ -60,7 +60,7 @@ class Console(list):
 
     def show(self,count,width,pad=True):
         """Return a list of the last 'count' lines, wrapped to 'width'.
-    
+        
         If 'pad' is true, will always return 'count' lines, even if the
         console is empty meaning blank lines must be generated and appended.
         """

@@ -18,10 +18,15 @@ def signal_handler(num, frame):
 signal.signal(signal.SIGINT,signal_handler)
 signal.signal(signal.SIGTERM,signal_handler)
 
+# stdscr
+# The CURSES window.
+stdscr = None
+
 # reset_screen
 # Function called to return the screen to normal line-by-line input mode.
 def reset_screen():
     try:
+        if stdscr != None: stdscr.keypad(0);
         curses.nocbreak()
         curses.echo()
         curses.endwin()
@@ -155,16 +160,17 @@ class Game(object):
         self.console.append('')
 
         # Start up CURSES.
-        self.screen = curses.initscr()
+        global stdscr
+        stdscr = curses.initscr()
         curses.noecho()
         curses.cbreak()
         curses.start_color()
         curses.init_pair(1,curses.COLOR_WHITE,curses.COLOR_BLUE)
-#       self.screen.nodelay(1)
-        self.screen.leaveok(0)
-        self.screen.keypad(1)
-        self.screen.clear()
-        self.screen.refresh()
+#       stdscr.nodelay(1)
+        stdscr.leaveok(0)
+        stdscr.keypad(1)
+        stdscr.clear()
+        stdscr.refresh()
 
         # Layout dimensions for the CURSES screen.
         self.map_ysize, self.map_xsize = (0,0)
@@ -214,7 +220,7 @@ class Game(object):
 
     # size_window
     def size_window(self):
-        self.screen_ysize, self.screen_xsize = self.screen.getmaxyx()
+        self.screen_ysize, self.screen_xsize = stdscr.getmaxyx()
 
         self.console_xsize = self.screen_xsize
         self.console_ysize = 5+(self.screen_ysize%2)
@@ -227,14 +233,14 @@ class Game(object):
 
     # run_keyboard
     def run_keyboard(self):
-        ch = self.screen.getch()
+        ch = stdscr.getch()
         if ch == ord('q') or ch == ord('Q'):    # Quit game.
             self.quit = True
         elif ch == 27:    # Quit game.
             self.quit = True
         elif ch == curses.KEY_RESIZE:
             self.size_window()
-            self.screen.clear()
+            stdscr.clear()
 
         if not self.player.dead:
             if ch == curses.KEY_LEFT:
@@ -339,7 +345,7 @@ class Game(object):
 
     # run_draw
     def run_draw(self):
-        self.screen.erase()
+        stdscr.erase()
 
         # Map.
         xmin = self.player.xx-int(self.view_xsize/2)
@@ -356,14 +362,13 @@ class Game(object):
         if ymin < 0: ymin = 0;
         if ymax >= self.map_ysize: ymax = self.map_ysize-1;
 
-        for yy in range(0,self.view_ysize):
-            self.screen.addstr(yy,0,' '*self.view_xsize,curses.color_pair(1))
-
         # Draw map tiles.
+        for yy in range(0,self.view_ysize):
+            stdscr.addstr(yy,0,' '*self.view_xsize,curses.color_pair(1))
         for yy in range(ymin,ymax+1):
             lin = self.dungeon[yy][xmin:xmax+1]
-            self.screen.addstr((yy-ymin)+(ymin-vy0),
-                               (xmin-vx0),lin,curses.color_pair(1))
+            stdscr.addstr((yy-ymin)+(ymin-vy0),
+                          (xmin-vx0),lin,curses.color_pair(1))
 
 #       # Draw AI paths.
 #       for ee in self.entities:
@@ -371,7 +376,7 @@ class Game(object):
 #           for point in ee.travel:
 #               xx = point[0]-vx0
 #               yy = point[1]-vy0
-#               self.screen.addstr(yy,xx,'?',curses.color_pair(1))
+#               stdscr.addstr(yy,xx,'?',curses.color_pair(1))
 
         # Draw map entities.
         for ee in self.entities:
@@ -379,17 +384,17 @@ class Game(object):
             yy = ee.yy-vy0
             if xx < 0 or xx > self.view_xsize: continue;
             if yy < 0 or yy > self.view_ysize: continue;
-            self.screen.addstr(yy,xx,ee.code,curses.color_pair(1))
+            stdscr.addstr(yy,xx,ee.code,curses.color_pair(1))
 
         # Console.
         contxt = self.console.show(5,self.console_xsize)
         for ii in range(0,5):
-            self.screen.addstr(self.screen_ysize-self.console_ysize+
-                               ii,0,contxt[ii])
+            stdscr.addstr(self.screen_ysize-self.console_ysize+
+                          ii,0,contxt[ii])
 
         # Cursor.
-        self.screen.move((self.view_ysize-1)/2,(self.view_xsize-1)/2)
-        self.screen.refresh()
+        stdscr.move((self.view_ysize-1)/2,(self.view_xsize-1)/2)
+        stdscr.refresh()
 
     # run
     def run(self):
@@ -404,6 +409,7 @@ class Game(object):
             else:
                 self.run_keyboard()
                 self.run_draw()
+        reset_screen()
 
 # main
 def main():
